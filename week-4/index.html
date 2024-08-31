@@ -7,16 +7,41 @@
     let todoState = [];
     let oldTodoState = [];
 
-    function addTodoToDom() {
-      
+    function addTodoToDom(newTodos) {
+      const container = document.getElementById("todos");
+      //create a new child 
+      console.log("new todo array : ",newTodos);
+      newTodos.forEach((element)=>{
+        const parent  = document.createElement("div");
+        const title = document.createElement("div");
+        const description = document.createElement("div");
+        parent.setAttribute("style","margin:10px");
+        title.setAttribute("style","margin:5px");
+        description.setAttribute("style","margin:5px");
+        title.innerHTML=element.title;
+        description.innerHTML=element.description;
+        parent.appendChild(title);
+        parent.appendChild(description);
+        parent.setAttribute("id",element.id);
+        container.appendChild(parent);
+      });
     }
 
-    function removeTodoFromDom(todo) {
-      
+    function removeTodoFromDom(removedTodos) {
+      const container  = document.getElementById("todos");
+      removedTodos.forEach((element)=>{
+       const tempElement = document.getElementById(element.id);
+       console.log("Removed the element : ",tempElement);
+       container.removeChild(tempElement);
+      });
     }
 
-    function updateTodoInDom(oldTodo, newTodo) {
-        
+    function updateTodoInDom(updated_todos) {
+        updated_todos.forEach((element)=>{
+          const currentEle = document.getElementById(element.id);
+          currentEle.children[0].innerHTML=element.title;
+          currentEle.children[1].innerHTML=element.description;
+        })
     }
 
     function updateState(newTodos) {
@@ -25,13 +50,59 @@
       // 1. added
       // 2. deleted
       // 3. updated
+      console.log("new todo state :",newTodos);
+      console.log("old state : ",oldTodoState);
       const added = [];
       const deleted = [];
       const updated = [];
+      if(oldTodoState.length==0){
+        console.log("first todopush");
+        addTodoToDom(newTodos);
+      }else{
+        //for added todos
+        console.log("another todo added may be");
+        let i=0;
+        let j=0;
+        while(i<newTodos.length && j<oldTodoState.length){
+          if(newTodos[i].id==oldTodoState[j].id){
+            if(newTodos[i].title!=oldTodoState[j].title || newTodos[i].description!=oldTodoState[j].description){
+              //send that todo in updated todo list 
+              console.log("Updating the todo");
+              updated.push(newTodos[i]);
+            }
+            i++;
+            j++;
+          }else{
+            //deleted todo from old todo
+            console.log("todo change detected");
+            deleted.push(oldTodoState[j]);
+            j++;
+          }
+        }
+        while(i<newTodos.length && j>=oldTodoState.length){
+          // new todo has been added
+          added.push(newTodos[i]);
+          i++;
+        }
+        while(j<oldTodoState.length && i>=newTodos.length){
+          // new todo has been added
+          deleted.push(oldTodoState[j]);
+          j++;
+        }
+        addTodoToDom(added);
+          removeTodoFromDom(deleted);
+          updateTodoInDom(updated);
+      }
+      
       // calculate these 3 arrays
       // call addTodo, removeTodo, updateTodo functions on each of the
       // elements
-      oldTodoState = newTodos;
+      oldTodoState = [];
+      newTodos.forEach((ele)=>{
+        oldTodoState.push(ele);
+      })
+      console.log("old todo state after re rednering : ",oldTodoState);
+      
     }
 
     function addTodo() {
@@ -44,13 +115,24 @@
       })
       updateState(todoState);
     }
+    function fetchTodo(){
+      fetch("http://localhost:8080/calculate/fetchTodo")
+      .then((response)=>{
+        response.json().then((finalResponse)=>{
+          console.log("Fetching latest todos from backend .......");
+          console.log("todo found ",finalResponse);
+          updateState(finalResponse);
+        })
+      })
+    }
   </script>
 </head>
 
 <body>
   <input type="text" id="title" placeholder="Todo title"></input> <br /><br />
   <input type="text" id="description" placeholder="Todo description"></input> <br /><br />
-  <button onclick="addTodo()">Add todo</button>
+  <button onclick="addTodo()">Add Todo</button>
+  <button onclick="fetchTodo()">Fetch Latest Todos</button>
   <br /> <br />
 
   <div id="todos">
